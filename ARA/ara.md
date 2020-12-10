@@ -1,12 +1,26 @@
 # ARA
 
+Luciana :
+
+    L'examen réparti 1 portera sur la partie de Pierre Sens et la mienne :
+    - Protocole de diffusion
+    - Mémoire partagée
+    - Détecteur de fautes
+    - Paxos
+
+    Sans documents.
+
+    Les TDs que nous avons faits ont été extraits des anciens examen.  Les exercices de l'examen seront du même type que les TDs.
+
+
+
 Pour l'instant, nous n'avons pas de cours numérique, c'est juste un polycopié. En plus de ces notes de cours, voir mes notes manuscrites.
 
 Je n'ai pas encore le cours de 2020 (pas encore mis en ligne sur Moodle ni donné par mail) mais j'ai mis le cours de 2017 : `Cours 1/Protocole_diffussion_2017.pdf`.
 
-# Cours du 06-09-2020
+# Cours du 06-10-2020
 
-Aucune note manuscrite pour ce cours 1. (seulement pour le TD 1)
+Toutes mes notes sont ici pour le cours 1, (aucune note manuscrite pour ce cours, seulement pour le TD 1)
 
 On aura un projet avec Jonathan sous PeerSim. Et rien d'étonnant, on aura aussi des TME.
 
@@ -20,38 +34,77 @@ Le concensus en une phrase : tous les processus doivent se mettre d'accord sur u
 **p.16**
 reveive(m) est différent de deliver(m). Ça permettrait d'éviter certaines incohérences comme vu à la diapo p.13.
 
+**p.19**
+```
+Un groupe peut être :
+• fermé : broadcast(m) ne peut être appelé que par un membre du groupe
+• ouvert : broadcast(m) peut être appelé par un processus extérieur au groupe
+```
+
+Diffusion Best Effort, Fiable, Fiable Uniforme : à partir de p.23
+Ordre FIFO, Causal, Total : à partir de p.23
+
 **p.24**
 La garantie Best-effort est assez faible.
+
+**Diffusion Best-effort** (p.24) -> Garantie la délivrance d'un message à tous les processus corrects si l'émetteur est correct.
+
+**Diffusion Fiable (Reliable Broadcast)** (p.26) ->
+- si l'émetteur du message m est correct, alors tous les destinataires corrects délivrent le message m.
+- si l'émetteur du message m est fautif, tous ou aucun processus corrects délivrent le message m.
+
+**Diffusion Fiable Uniforme (Uniform Reliable Broadcast)** (p.33) -> 
+- Si un message m est délivré par un processus (fautif ou correct), alors tout processus correct finit aussi par délivrer m.
 
 **p.27**
 Validité = best effort
 
 **p.28-29** : on est dans un système asynchrone. Chaque processus est supposé connaître tous les autres processus, tout le temps. (donc pas de latence du à un groupe dynamique etc. on la fait simple pour le moment...)
 
+**Ordre** (p.36)
+
+**Ordre Total**
+- Les messages sont délivrés dans le même ordre à tous leurs
+destinataires.
+
+**Ordre FIFO**
+- si un membre diffuse m1 puis m2, alors tout membre correct qui
+délivre m2 délivre m1 avant m2.
+
+**Ordre Causal**
+- si broadcast(m1) précède causalement broadcast (m2), alors
+tout processus correct qui délivre m2, délivre m1 avant m2.
+
 **p.40** : C'est pas représenté ici, mais il y a bien délivrance à l'application de chaque processus du message x = 1 avant le message x = 2.
+
+**Types de Diffusion Fiable (1)** (p.41) :
+- `Diffusion FIFO`              = Diffusion fiable + Ordre FIFO
+- `Diffusion Causal (CBCAST)`   = Diffusion fiable + Ordre Causal
+- `Diffusion Atomique (ABCAST)` = Diffusion fiable + Ordre Total
+- `Diffusion Atomique FIFO`     = Diffusion FIFO + Ordre Total
+- `Diffusion Atomique Causal`   = Diffusion Causal + Ordre Total
 
 **p.43** : ce n'est pas un broadcast FIFO.
 
 **p.45** : seq# signifie "numéro de séquence".
 En gros, là, il s'agit de délivrer le message dans l'ordre des numéros de séquence.
 
-p.46 : le processus a donc un compteur de messages qu'il attend de la part du processus 2, et du coup quand il reçoit un message à l'identifiant trop élevé, il le met en attente et il attend de recevoir le message portant le numéro attendu. Et comme ça, tous les messages sont reçus dans l'ordre. Je suppose que ça nécessite juste une liste de mesages en attente, et deux compteurs sur l'émetteur (le dernier numéro que j'ai envoyé à p) et un sur p : le next attendu.
+**p.46** : le processus a donc un compteur de messages qu'il attend de la part du processus 2, et du coup quand il reçoit un message à l'identifiant trop élevé, il le met en attente et il attend de recevoir le message portant le numéro attendu. Et comme ça, tous les messages sont reçus dans l'ordre. Je suppose que ça nécessite juste une liste de messages en attente, et deux compteurs sur l'émetteur (le dernier numéro que j'ai envoyé à p) et un sur p : le next attendu.
 
-**(p.52)**
-Je crois *(à vérifier)* que chaque message est délivré lorsqu'il y a une différence de 1 entre l'horloge vectorielle locale et l'horloge vectorielle associée au message reçu.C'est à dire que le message est mis en attente jusqu'à ce que j'ai reçu tous les messages qui le précèdent causalement : le (1) signifie avoir reçu tous les broadcasts de l'émetteur du message (que ce message porte l'estampille que j'ai en local (pour le processus émetteur) + 1) et (2) signifie que je n'ai pas d'autres messages précédemment causalement cet envoi, et qui doivent dont arriver avant lui.  C'est d'ailleurs ce qui est expliqué sur le poly, en fait.
+**(p.52)** : Je crois *(à vérifier)* que chaque message est délivré lorsqu'il y a une différence de 1 entre l'horloge vectorielle locale et l'horloge vectorielle associée au message reçu.C'est à dire que le message est mis en attente jusqu'à ce que j'ai reçu tous les messages qui le précèdent causalement : le (1) signifie avoir reçu tous les broadcasts de l'émetteur du message (que ce message porte l'estampille que j'ai en local (pour le processus émetteur) + 1) et (2) signifie que je n'ai pas d'autres messages précédemment causalement cet envoi, et qui doivent dont arriver avant lui.  C'est d'ailleurs ce qui est expliqué sur le poly, en fait.
 
 **p.63**
-**\ token.liste do** : et pas dans la liste du token
+**\ token.liste do** : et pas dans la liste du token (`\` = `privé de`)
 
-p.66 : on suppose le processus s1 a le token.
+**p.66** : on suppose le processus s1 a le token.
 
-p.71 : N = temporaire, D = définitif
+**p.71** : N = temporaire, D = définitif
 A chaque fois, on prend le numéro le plus grand, pour chaque date de message reçue. Lorsqu'un message est noté définitif, et qu'il est au début de la file, le processus sait qu'il peut délivrer le message à l'application. Puis, (p.72) tous les messages sont délivrés à l'application à l'étape 4.
 
 
-## TD associé (du 06-09-2020)
+## TD associé (du 06-10-2020)
 
-Une partie de mes notes sont manuscrites, rangées dans ma pochette `ARA`.
+-> **Une partie de mes notes sont manuscrites, rangées dans ma pochette `ARA`.**
 
 ### Exercice 1
 
@@ -171,14 +224,16 @@ Pour chaque ack envoyé, il faut incrémenter le compteur de confirmations qu'on
 
 ```
 correct = PI
-pend = delv = void
-ack'm[] = void
+pend = void   // messages en attente de livraison
+delv = void   // messages livrés
+ack[] = void  // initialement noté ack'm[m] ('m => m en indice) mais je trouvais pas ça clair, j'ai transformé en ack[m] simplement.
 
 Unif_real_broadcast(m)
 {
     // sauvegarde du message à chaque fois
+    // Le message est en attente de livraison
     pend U= {m}
-    - estampiller m avec send(m) et seq#(m)
+    - estampiller m avec send(m) et seq#(m)  (celui qui l'a envoyé et ne numéro de séquence local au processus) ;
     - envoyer m à tous les processus (appartenant à) correct ;
 }
 
@@ -186,13 +241,15 @@ Unif_real_broadcast(m)
 
 upon recv <m> from q :
 {
-    ack'm[m] U= {q}
+    ack[m] U= {q}
 
     if (m ∉ pend and m ∉ delv (delivered))
         pend U= {m}
-        envoyer m à tous les processus corrects sauf p. // c'est comme si c'était un ACK : on rediffuse le message.
+        envoyer m à tous les processus corrects sauf p.
+        // -> c'est comme si c'était un ACK : on rediffuse le message.
 
-    if (correct ⊆ ack'm[m]) {
+    // Si tous les processus corrects ont répondu
+    if (correct ⊆ ack[m]) {
         deliv U= {m}
         pend = pend \ {m}
         Unif_real_deliver(m);
@@ -202,7 +259,9 @@ upon recv <m> from q :
 upon <crash, q>
     correct = correct \ {q}
     for all m ∈ pend
-    if ( (m ∉ deliv) && correct ⊆ ack'm[m]) {
+
+    // Je livre tous les messages queje peux livrer
+    if ( (m ∉ deliv) && correct ⊆ ack[m]) {
         delv U= {m}
         pend = pend \ {m}
         Unif_real_deliver(m);
@@ -225,84 +284,147 @@ Par Jonathan Lejuene
 
 Pour le TP, il serait bien de définir un message par couche protocolaire.
 
+Voir les photos de cours que j'ai prises.(dans le dossier externe au git : `ARA c2 2020-10-20 Jonathan`)
 
 
 
-# Cours 3 - 2020-10-27
+
+# Cours 3 mémoire partagée - 2020-10-27
+
+Ce cours est aussi appelé "cours 2" comme le cours de Jonathan compte pour la 2ème partie du programme, après l'ER1.
 
 Durant ce cours, on va alterner entre cours et TD. TD Mémoire partagée, ARA Octobre 2020. Cours "Shared memory and Consistency Models".
 
-### TD 1.1.
+Manifestement, je n'ai pas pris de notes de cours manuscrites. Tout est sur le poly numérique, donc.
 
-La variable timestamp[i] ne peut pas être bornée. On peu avoir, sur P1 : timestamp[1] = 1 -> SC -> timestamp[1] = 0. et sur P2 timestamp[2] = 2 etc.
+**Notes prises depuis le poly, pour m'aider à comprendre**
 
-### TD 1.2.
+**Registre Safe** - *p.19*
+- `read` et `write` ne se chevauchent pas => `read` retourne la dernière valeur écrite
+- `read` et `write` se chevauchent => `read` retourne une valeur arbitraire autorisée par le registre (pas forcément une valeur déjà écrite, totalement non-déterministe)
 
-1. On est certain que i a choisi un ticket. Pas de concurrence entre i et k pour le ticket. k v aensuite choisir le max (peut-être i, peut-être quelque chose, mais n tout cas la valeur choisie sera plus importante que i).
+**Registre Regular**
+- Est un registre Safe
+- read et write concurrents : retourne soit la dernière valeur écrite par une écriture non concurrente, soit une valeur écrite par une écriture concurrente. (i.e. soit la dernière valeur écrite d'un bloc fini, soit une valeur qui est en train d'être écrite)
 
-2. Non, i et k peuvent avoir la même valeur.
+**Registre Atomique**
+- Est un registre Regular
+- est linéarisable
+- i.e. les écritures et lectures concurrentes sont linéarisables et on peut en tirer une exécution totalement ordonnée (ordre total => un peut tout classer, pas d'ex-æquo)
 
-max
-int k = i;
-for j = 1 to n do {
-    if (timestamp[k] < timestamp[i])
-        j = k;
-    return (timestamp[k]);
-}
 
-### 1.3
+**p.24-26** : Comment construire un MRSW à partir de plusieurs registres SRSW. Tous ces registres sont supposés Regular. Les registres S ne sont accessibles que par un seul processus, il est donc nécessaire d'avoir autant de registres que de processus pour permettre un accès concurrent en lecture. Un registre SRSW Ri est associé à un unique processus Pi. On suppose que le processus P0 est le seul à écrire, il va donc répliquer les écriture et écrire dans tous les registres à la fois.
 
-P1 et P2 vont sortie de la fonction avec la même valeur : 3. La problème est qu'on sauvegarde l'indice et non la valeur.
+Mais cela pose un problème de linéarisation. La valeur vaut 0. P0 met longtemps à écrire. P1 lit 1 entièrement, puis survient une lecture de P2 qui lit 0. On suppose que les lectures de P1 et P2 se suivent sans être concurrentes. Cette exécution n'est donc pas linéarisable, et ça nous embête. (p.26)
 
-### 1.4
+Solution : Pi doit soit choisir la valeur contenue dans Ri et une valeur déjà lue par un processus. On initialise un tableau de registres SRSW de taille `N*N` (N le nombre de processus et donc de registres) : `LastRead_val[N,N]`. La case [i,j] représente la connaissance qu'à Pj de la dernière valeur lue par Pi. Avant de retourner une valeur, un lecteur Pi écrit dans sa case `LastRead_val[i, k]` avec k ∈ [1, N]. *(je pense que ça commence à 1 et pas à 0)* Globalement, on se débrouille pour que la dernière valeur lue par chaque processus soit connue de tous les autres processus. Et comme une lecture ne se termine que lorsque tous les registres ont été mis à jour, on peut toujours linéariser.
 
-En fait cette fonction ne marche pas. Das ce cas là, on doit trouver un scénario montrant que deux processus vont entrer simultanément en SC.
-On a beosin de 3 processus : P1, P2 et P3. (id = 1, 2 et 3) On suppose que P2 et P3 exécutent la fonction et sortent avec la même valeur (on a vu à la question précédente que c'est possible.)
+**Sequential Consistency - Cohérence séquentielle** - *p.47*
+- Assimilable à une exécution séquentielle
+- i.e. possible de projeter toutes les opérations de tous les processus sur une même ligne
+- Tout enchevêtrement est possible, mais tous les processus voient le même.
+- Même si deux opérations ne sont pas concurrentes, elles peuvent être interchangées : si temporellement, o1 vient avant o2, o1 peut venir après o2 dans l'exécution séquentielle (à partir du moment où elles sont sur deux processus distincts, on ne peut pas réordonner des opérations sur un même processus).
+- -> Globalement, ça veut dire qu'on s'arrange pour que ça passe bien et que tout soit cohérent (entre valeurs lues et valeurs écrites).
 
-- P2 et P3 exécutent la fonction max et sortent avec timestamp[2] = timestamp[3] = 0.
-- P2 fait timestamp[2]=1+max et entre en SC (phase 3 donc). On a donc, pour les timestamp : 001000 (pour 0123456).
-- P1 exécute phase 1 et perd la main après la ligne 5 (k=j).
-- P2 sort de la SC -> timestamp[2] = 0
-- P3 rentre en SC.
-- P1 fait : P1 = 1+max() -> timestamp[1] = 1 + max = 1. On a donc le vecteur 
-- Comme id(P1) < id(Px) pour tout x <= N, x != 1.
-- P1 rentre en SC, alors que P3 y est déjà.
+**Causal Consistency - Cohérence Causale** - *p.50*
+- On définit la relation de causalité globale comme suit :
+- En local : l'ordre causal sur un même processus
+- Entre processus : une opération `write` précède causalement un `read` lorsque la valeur du `read` retourne la valeur écrite par le `write`. i.e. il faut que tous les read respectent l'ordre causal des write.
+- La causalité globale est issue de ces deux règles. Ces règles sont transitives (comme l'ordre causal vu l'année dernière en AR).
 
-Le problème est quon sauvegarde l'indice.
+**PRAM Consistency - Cohérence PRAM** - *p.54*
+- Seule la causalité locale doit être respectée :
+- Sur un même processus, si w1 -> w2, alors ces deux écritures doivent rester dans cet ordre, pour tous les processus.
+- Sur deux processus distincts, seule la causalité locale doit être respectée.
 
-(voir photos 2020-10-27 le matin)
 
-### 1.5
+## TD associé (Cours 3 mémoire partagée) - 2020-10-27
 
-i.e. proposer un autre cod epour la fonction max.
+### Exercice 1
 
-On peut garder dans une variable locale la valeur. Comme ça, même si la valeur est changée, on a sauvegardé la précédente.
+#### 1.1.
 
-```java
-max()
-MAX = 0;
-for j = 1 to N {
-    temps = timestamp[j];
-    if (MAX < temps)
-        MAX = temps;
-    return (MAX);
+La variable timestamp[i] ne peut pas être bornée. On peut avoir, sur P1 : timestamp[1] = 1 -> SC -> timestamp[1] = 0. et sur P2 timestamp[2] = 2 etc.
+
+
+#### 1.2.
+
+1. On est certain que i a choisi un ticket. Pas de concurrence entre i et k pour le ticket. k va ensuite choisir le max (peut-être i, peut-être quelque chose, mais en tout cas la valeur choisie sera plus importante que i).
+
+2. Non, i et k peuvent avoir la même valeur. Je suppose que ça peut se produire lorsque les deux processus en même temps en recherche de ticket mais que i est plus rapide que k à s'exécuter. (parce que l'attribution de ticket n'est pas une opération atomique protégée, plusieurs processus peuvent y avoir accès en concurrence). Par contre, on ne peut pas avoir `timestamp[k] < timestamp[i]` comme il n'y a que deux processus qui choisissent leur ticket en même temps.
+
+Notes modifiées :
+```
+function max {
+    // i = identifiant du processus courant 
+    int k = i;
+    for j = 1 to n do {
+        if (timestamp[k] < timestamp[j]) // nouveau max
+            k = j;
+        return (timestamp[k]);
+    }
 }
 ```
 
-On reprend le cours pour povoir faire la question 1.6. (on recommence de la page 6);
-p.24 : MESW : multiple readers, single writer.
+
+#### 1.3
+
+P1 et P2 vont sortie de la fonction avec la même valeur : 3 (dans l'exemple au tableau, pas grave si j'ai pas la réf). Le problème est qu'on sauvegarde l'indice et non la valeur.
+
+
+#### 1.4
+
+En fait cette fonction ne marche pas. Dans ce cas là, on doit trouver un scénario montrant que deux processus vont entrer simultanément en SC.
+On a besoin de 3 processus : P1, P2 et P3. (id = 1, 2 et 3) On suppose que P2 et P3 exécutent la fonction et sortent avec la même valeur (on a vu à la question précédente que c'est possible.)
+
+- P2 et P3 exécutent la fonction max et sortent avec `timestamp[2] = timestamp[3] = 0`.
+- P2 fait `timestamp[2] = (1 + max) = 1` et entre en SC (phase 3 donc). On a donc, pour le vecteur de timestamp : `010`
+- P1 exécute phase 1 et perd la main après la ligne 4 (k=j), donc avant d'accéder à la valeur `timestamp[k]` avec `k = 2` (là, à cet instant, `timestamp[k = 2] = 1`).
+- P2 sort de la SC -> timestamp[2] = 0
+- P3 rentre en SC.
+- P1 fait : `timestamp[1] = (1 + max) = 1`. On a donc le vecteur `101`
+- Comme `∀ x ≤ N, x ≠ 1 : id(P1) < id(Px)`, P1 rentre en SC, alors que P3 y est déjà.
+
+Le problème est qu'on sauvegarde l'indice. *Je pense pas que : le problème est surtout qu'on attribut un ticket d'une manière non atomique ?*
+
+*(photos 2020-10-27 le matin -> okay, bien recopié)*
+
+
+#### 1.5
+
+i.e. proposer un autre code pour la fonction max.
+
+On peut garder dans une variable locale la valeur. Comme ça, même si la valeur est changée, on a sauvegardé la précédente.
+
+```
+function max {
+    MAX = 0;
+    for j = 1 to N {
+        temps = timestamp[j];
+        if (MAX < temps)
+            MAX = temps;
+        return (MAX);
+    }
+}
+```
+
+On reprend le cours pour pouvoir faire la question 1.6. (on recommence de la page 6);
+p.24 : MRSW : multiple readers, single writer.
 On reprend désormais le TD (le cours est fini, 62 dispos présentées)
 
-### 1.6
 
-Ici, on applique la fonction f au registre, on affecte la valeur au egistre et on renvoie la valeur précédente, et tout ça d'une manière atomique ,sans être interrompu. Il faut alors coder la conftion entrer SC et sortir SC.
+#### 1.6
 
-On a un registre `R/W r;`
-et `shared read-modify-write ticket = 0;`
-`shared read-modify valid = 0; // le prochain à rentrer`
+Ici, on applique la fonction f au registre, on affecte la valeur au registre et on renvoie la valeur précédente, et tout ça d'une manière atomique, sans être interrompu. Il faut alors coder la fonction entrer SC et sortir SC.
 
-Il va donc faloir implémenter d'une manière atmique le alid et le ticket.
+On a trois registres :
+- `R/W r`
+- `shared read-modify-write ticket = 0`
+- `shared read-modify valid = 0` : le prochain à rentrer
 
+Il va donc falloir implémenter d'une manière atomique le valid et le ticket.
+
+```
 int(register r) {
     r = (r + 1) % n;
 }
@@ -315,31 +437,44 @@ EntrySC() {
 ExitSC() {
     read-and-modify(valid, inc);
 }
+```
 
-## Exercice 2
+### Exercice 2
 
-### 2.1
+
+#### 2.1
 
 On peut considérer la séquence suivante : P2 w(x, 1) ; P1 r(x)=1 ; P1 w(y, 2) ; P3 w(y, 4) ; P3 read(x)=1 ; P1 read(y=4) ; P2 write(x, 3). C'est donc une exécution séquentielle.
-(redondance via une photo du tableau)
+*(redondance via une photo du tableau)*
 
-### 2.2
+
+#### 2.2
 
 On a :
-write x1 -> write x3
-voir photo, ça me fatugue trop de recopier du tableau.
+```
+write(x, 1) -> write(x, 3)
+write(x, 1) -> write(y, 2)
+write(x, 3) -> write(y, 4)
+```
+
+Et par transitivité : `write(x, 1) -> write(y, 4)`
+
+*ok : voir photo, ça me fatugue trop de recopier du tableau.*
 
 
-### 2.3
 
-On a une dépendance causale, car tous les read respectent l'ordre causal des write (et on a auasi causal -> PRAM). Mais ce n'est pas séquentiel car on ne peut pas réussir à extraire une séquence cohérente de cette exécution : pas de séquence valable.
+-> Reprendre d'ici
+
+#### 2.3
+
+On a une dépendance causale, car tous les read respectent l'ordre causal des write (et on a aussi causal -> PRAM). Mais ce n'est pas séquentiel car on ne peut pas réussir à extraire une séquence cohérente de cette exécution : pas de séquence valable.
 Par exemple : w(y,2) w(y,4) mais read(?) : pas possible pour P3 de lire y=2.
 Ou alors w(y,4) w(y,2) read(?) : pas possible pour P2 de lire y=4. Une règle est qu'on ne peut pas intervertir deux évènements sur un même processus, mais on peut par exemple intervertir deux read dans deux processus distincts.
 
 
-### 2.4
+#### 2.4
 
-```java
+```
 int x; // variable locale
 
 operation(op, val) {
@@ -358,13 +493,17 @@ upon deviver msg<write, val, id> {
 }
 ```
 
-## Exercice 3
+
+
+### Exercice 3
 
 ### 3.1
 
 boo MRSW registre R' = 0;
-```java
+
+```
 local variable  previous = 0;
+
 boo Write(R, val) {
     if (previous != val) {
         R' = val;
@@ -374,11 +513,10 @@ boo Write(R, val) {
     return OK;
 }
 
-bo Read(R) {
+boo Read(R) {
     val = R';
     return (val);
 }
-
 ```
 
 ### 3.2
@@ -387,10 +525,80 @@ Non, pas possible, car il n'y a plus seulement 2 valeurs.
 
 
 
+
+
+# Cours 4 - Consensus et détection de fautes - Pierre Sens - 
+
+Là, par rapport à AR, on traite les fautes. On s'intéresse ici au consensus. C'est un problème d'accord.
+
+
+**Canaux**
+
+- **Fiable (reliable)** -> si p execute send (m) vers q et q est correct , alors q recevra m
+- **Quasi fiable (quasi reliable)** -> si p execute send (m) vers q et p et q sont corrects, alors q recevra m
+- **Equitable (fair lossy)** -> si un processus correct envoie un message m à q une infinité de fois, alors q recevra m
+
+p.14 : bi-source, ça veut dire "dans les deux sens", envoyer comme recevoir.
+
+En anglais :
+- Justesse = Accuracy
+- Complétude = Completness
+
+-> reprendre à partir de la page 16 - 45min00 de la vidéo.
+
+**Complétude (completeness)** - *p.16*
+- **Forte** : *Il existe un instant à partir duquel tout processus défaillant* est
+suspecté par **tous** les processus corrects
+- **Faible** : *Il existe un instant à partir duquel tout processus défaillant* est
+suspecté par **un** processus correct
+
+**Justesse (accuracy)** - *p.16*
+- **Forte** : aucun processus correct n’est suspecté
+- **Faible** : il existe au moins un processus correct qui n’est jamais suspecté
+- **Finalement forte** : *forte au bout d'un moment* -> il existe un instant à partir duquel tout processus
+correct n’est plus suspecté par aucun processus correct
+- **Finalement faible** : *faible au bout d'un moment* -> il existe un instant à partir duquel au moins un processus correct n’est suspecté par aucun processus correct
+
+**Classes de détecteurs de fautes** - *p.17*
+- P (Perfect) -> Complétude forte + justesse forte
+- S (Strong) -> Complétude forte + justesse faible
+- Q -> Complétude faible + justesse forte
+- W -> Complétude faible + justesse faible
+- Diamond signifie "au bout d'un moment"
+
+On ne va s'intéresser qu'aux détecteurs P et S, car les complétudes faibles et fortes sont équivalentes (p.18)
+
+p.21 : entourés en rouge : les quorums, sigma s'appelle le détecteur quorum.
+
+
+reprendre de la page 30, 1h36
+
+
+
+
+
+
 ## 2020-11-17 Cours 6
 
 
 GST : global stabilization time.
 
-<> : Diamond, signifie "au bout d'un moment".
+<> : Diamond, signifie "au bout d'un moment", "finalement".
 
+
+
+## Examen Réparti 1
+
+L'examen réparti 1 aura lieu le 15 décembre, à la place d'un cours, et à la place du créneau du 1er décembre, il y aura un cours.
+
+
+# Projet 2020-2021
+
+Mail Célia (encadrante) : celia.mahamdi@lip6.fr
+
+Il nous conseille de nous mettre en binôme pour se répartir le travail.
+20% de la note finale en ARA.
+
+On est libre de faire le rapport comme on veut. Du moment que c'est synthétique et bien fait. On est totalement libre pour la partie 3. Si on prend quelque chose sur Internet, il faut absolument citer ses sources exactes.
+
+Faut bien défricher le sujet avant de se lancer sur le code, bien réfléchir à ce qu'il y a à coder.
