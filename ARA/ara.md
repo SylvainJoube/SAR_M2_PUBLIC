@@ -571,9 +571,113 @@ On ne va s'intéresser qu'aux détecteurs P et S, car les complétudes faibles e
 p.21 : entourés en rouge : les quorums, sigma s'appelle le détecteur quorum.
 
 
-reprendre de la page 30, 1h36
+# TD Détecteur de fautes – élection de leader
+
+### Q1
+
+Omega ocmme vu en cours.
+
+**L'algo, tel que je le comprends :**
+- Init : je pense que le leader est le processus 1. Pour tous les processus avant moi (i.e. qui ont un id inférieur au mien), je mets le délai d'attente de chaque processus à la vaeur par défaut.
+- Tâche 1 (répéter périodiquement) : si je pense être le leader, j'envoie que je suis le leader à tous les processus qui me suivent.
+- Tâche 2 (si je pense que le leader est avant moi) et (si je n'ai pas reçu de message de celui que je pense être le leader depuis trop longtemps) : je passe au processus suivant que je considère comme être le leader.
+- Tâche 3 (lorsque je reçois "je suis le leader" depuis un processus venant avant le processus que je pense être le leader) : je le considère comme étant le leader, et j'incrémente son timeout (parce que je me suis donc trompé)
+
+### Q2
+
+- Task 4 : retourner le processus trusted(i), il sera le même pour tous les processus corrects, au bout d'un moment.
+
+### Q3
+
+Si aucun processus ne tombe en panne, le processus leader sera le processus 1. Les temps max de transmission seront connus et 1 restera pour toujours le leader.
+
+### Q4
+
+Oui, sans problème. P1 met du temps à envoyer un message à P2 et P3 mais pas à P4. P4 pense que le leader est 1, mais P2 qui se pense leader envoie "je suis le leader" à P3 et P4. P4 l'ignore (j(=2) > trusted(j)(=1)) mais P3 pense que c'est P2 le leader. A ce stade, il y a donc bien 2 leaders (puis P2 et P3 reçoivent le heartbeat de P1, incrémentent leur timeout pour P1 et considèrent que P1 est le leader).
+
+### Q5
+
+Comme dit dans ma Q4, c'est l'incrément du timeout d'un processus lors de la détection d'une erreur qui va permettre, au final, de borner le délai de réception d'un message et donc de ne plus faire d'erreur.
+
+### Q6
+
+Perso j'essayerais bien par l'absurde : On suppose que  `∀ t : ∃ t' > t, ∃ pi ∈ correct, leader(t') != pleader`
+
+i.e. à n'importe quel moment, il existe un instant dans le futur où tous les processus ne sont pas d'accord entre eux.
+
+--
+
+Au bout d'un moment, il y a des bornes sur le délai de transmission (lorsque le GST est atteint, le global stabilisation time). (i.e. delta suite croissante majorée, à valeurs entières, donc au bout d'un moment, delta se stabilise à la valeur de sa borne supérieure).
+
+Donc au bout d'un moment, chaque processus correct ne fait plus aucune faute sur aucun autre processus correct. Donc le leader reste toujours le même et ne change plus pour chaque processus. La Task 2 de l'algorithme n'est donc plus jamais vérifiée (plus aucune de fautes et toujours le même leader).
+
+Soient Px et Py deux processus qui n'ont pas le même leader. Comme Task2 n'est jamais réalisée, cela veut dire qu'un processus L1 envoie périodiquement à P1 et qu'un autre processus L2 envoie à P2. On suppose l'id de L1 inférieur à l'id de L2. Il y a donc deux leaders, qui envoient leurs messages à tous les processus. Dans la Task3, le processus P2 reçoit donc les messages de L1 et comme id(L1) < trusted(=L2) il devrait changer de leader. On a donc une contradiction car les canaux sont fiables et qu'aucun message n'est perdu. Donc la formule est vraie.
+
+On a aussi que tous les processus d'id inférieur au leader sont fautifs (s'ils ne l'étaient pas, ils seraient leader, comme le prouve la démonstration ci-dessus).
 
 
+### Q6
+
+S :
+- complétude forte : tout processus fautif est au bout d'un moment suspecté par tous les processus corrects
+- justesse faible : au bout d'un moment, il y a un processus qui n'est jamais suspecté
+
+<>S = au bout d'un moment S (et pour toujours), on a bien tous les processus fautifs sont suspectés par tous les processus corrects, et il y a un processus correct non suspecté : le leader. Donc oui, on a un détecteur de défaillance <>S.
+
+
+### Q7
+
+L'algo précédent est équivalent à un <>S. On a la complétude forte (tout processus fautif est suspecté au bout d'un moment par tous les processus corrects) et la justesse faible (il y a un processus correct qui n'est, au bout d'un moment, plus jamais suspecté, le leader). Ce qu'on veut ici pour implémenter un détecteur <>P, c'est implémenter la justesse forte : aucun processus correct n'est suspecté, au bout d'un moment.
+
+Du coup, a mon avis, c'est la même chose que l'autre algo avec en plus la détection des processus fautifs par le leader. (et le broadcast par le leader des processus fautifs aux autre). L'autre algo donne tous les processus corrects 
+
+ça donnerait :
+
+// le leader est le premier processus correct
+
+```C++
+Every process pi, i = 1, ..., n executes :
+trustedi <- 1     // je pense que le leader est 1
+suspectedi <- {}  // aucun processus suspecté
+
+∀ j ∈ {1, ..., n} : Δij <- default timeout
+
+cobegin
+// Task_1 : Message envoyé par le leader
+|| Task_1 : repeat periodically
+
+    if trustedi == i then  
+        send(I-AM-THE-LEADER, suspectedi) tp p(i+1), ..., p(n)
+    else
+        send(I-AM-ALIVE to ptrustedi)
+
+// Task_2 : détection de la panne d'un processus avant moi 
+|| Task_2 : when (trustedi < i) and (did not receive (I-AM-THE-LEADER, suspected_trustedi) from ptrustedi during the last Δi,trustedi time units)
+
+    trustedi <- trustedi + 1
+
+// Détection d'une erreur : message arrivé trop tard
+|| Task_3 : when (received (I-AM-THE-LEADER, suspected_trustedi) from pj) and (pj <= trustedi)
+
+    suspectedi = suspected_trustedi
+
+    if (j < trustedi)
+        trustedi <- j
+        Δij <- Δij + 1
+
+
+// Détection des processus en panne par le leader
+|| Task_4 : when (trustedi == i) and (did not receive I-AM-ALIVE from pj, j ∈ {1, ..., n}, j!=i  during the last Δi,j time units) and (pj ∉ suspectedi) and (j > i)
+    suspectedi <- suspectedi + {pj}
+
+// Détection d'une erreur : processus pas en panne en fait
+|| Task_5 : when (trustedi == i) and (received I-AM-ALIVE from pj) and (pj ∈ suspectedi)
+    suspectedi <- suspectedi - {pj}
+    Δij <- Δij + 1
+
+```
+
+Les tâches 1, 2 et 3 sont identiques qu'avec l'algo précédent, les tâches 4 et 5 servent au leader à détecter les processus réellement en panne.
 
 
 

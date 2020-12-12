@@ -95,8 +95,7 @@ suspecté par **un** processus correct
 **Justesse (accuracy)** - *p.16*
 - **Forte** : aucun processus correct n’est suspecté
 - **Faible** : il existe au moins un processus correct qui n’est jamais suspecté
-- **Finalement forte** : *forte au bout d'un moment* -> il existe un instant à partir duquel tout processus
-correct n’est plus suspecté par aucun processus correct
+- **Finalement forte** : *forte au bout d'un moment* -> il existe un instant à partir duquel tout processus correct n’est plus suspecté par aucun processus correct
 - **Finalement faible** : *faible au bout d'un moment* -> il existe un instant à partir duquel au moins un processus correct n’est suspecté par aucun processus correct
 
 **Classes de détecteurs de fautes** - *p.17*
