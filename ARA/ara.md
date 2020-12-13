@@ -655,6 +655,8 @@ cobegin
 || Task_2 : when (trustedi < i) and (did not receive (I-AM-THE-LEADER, suspected_trustedi) from ptrustedi during the last Δi,trustedi time units)
 
     trustedi <- trustedi + 1
+    if (trustedi = i)
+        suspectedi = {p1, ..., pi-1}
 
 // Détection d'une erreur : message arrivé trop tard
 || Task_3 : when (received (I-AM-THE-LEADER, suspected_trustedi) from pj) and (pj <= trustedi)
@@ -677,10 +679,143 @@ cobegin
 
 ```
 
-Les tâches 1, 2 et 3 sont identiques qu'avec l'algo précédent, les tâches 4 et 5 servent au leader à détecter les processus réellement en panne.
+Les tâches 1, 2 et 3 sont identiques qu'avec l'algo précédent (avec en plus diffusion et mise à jour des suspects), les tâches 4 et 5 servent au leader à détecter les processus réellement en panne.
+
+
+# TD Consensus M2 ARA - Coordinateur tournant (Chandra Toueg 1996)
+
+### Q1
+
+**Diffusion fiable** : Soit un message m envoyé par un processus.
+- Si l'émetteur est correct, tous les processus correctes finissent par délivrer le message m.
+- Si l'émetteur est fautif, soit tous les processus corrects finissent par délivrer m, soit aucun processus correct ne délivre m.
+
+**Consensus**
+- Validité : La valeur choisie est une valeur proposée
+- Accord : Tous les processus corrects décident la même valeur
+- Terminaison : Tous les processus corrects finissent par décider
+- Intégrité : Tout processus correct décide au plus une fois
+
+### Q2
+
+Les canaux sont fiables, donc un message sera bien délivré dès lors qu'il est envoyé. Le risque ici, est d'avoir un processus qui n'envoie qu'à une partie des processus puis crash. Donc il faut rediffuser tout message qui est reçu.
+
+On implémente juste une diffusion fiable, pas une diffusion fiable uniforme.
+
+```
+Init :
+// Liste des messages reçus sous la forme : (provenance, contenu)
+messages = {}
+correct = {p1, ..., pn}
+i = mon identifiant
+
+receive : upon reception of (sender, message)
+    if not ((sender, content) in messages) and (sender != pi)
+        for all pj in correct and pj != pi
+            send(sender, message) to pj
+        add (sender, content) to messages
+        real_deliver(sender, message)
+
+broadcast(message)
+    for all pj in correct
+        send(pi, message)
+```
+
+Ou, fait d'une manière plus simple :
+```
+receive : upon reception of message
+    if (message received first time) and (sender != this)
+        send message to all
+    real_deliver(message)
+
+broadcast(message)
+    send message to all
+```
+
+### Q3
+
+Initialisation :
+- estimatep : la valeur que p pense être la bonne
+- statep : l'état (décidé ou non décidé) de p
+- rp : numéro de ronde dans laquelle est le processus p
+- tsp : (timestamp) numéro de ronde où j'ai reçu estimate d'un coordinateur (numéro de la ronde où j'ai mis à jour ma valeur)
+
+Répéter toujours :
+- incrément du numéro de ronde
+- le coordinateur cp est associé au numéro de ronde (module le nb de processus)
+
+Phase 1 :
+- p envoie son numéro de ronde, sa valeur et (je sais pas) au coordinateur
+
+Phase 2 : (seulement si je suis le coordinateur)
+- attente d'une majorité de réponses
+- on prend la valeur d'estimate associée à la plus grande valeur "ts" reçue
+- broadcast de (sender (=this), round, estimate) à tous les processus y compris soi-même
+
+Phase 3 :
+- attendre de recevoir la valeur du coordinateur de cette round ou que je suspecte le coordinateur
+- si message reçu : je mets à jour mon estimation, ts = n°round, evoi d'un acquittement au coordinateur
+- si message pas reçu :j'envoie un nack au coordinateur
+
+Phase 4 :
+- si je suis le coordinateur :
+- - j'attends une majorité de ack ou de nack des autres processus
+- - si j'ai reçu une majorité de ack : je broadcast ma valeur estimate et round
+
+### Q3 et Q4
+
+Faits sur papier, mais questions :
+- t = 2 parce qu'on est à la round 2 et pas à la round 1 comme pour la question 3
+- dans la phase 2, on peut choisir n'importe quelle valeur à partir du moment où on prend une des valeurs associées au "ts" le plus grand, donc pour la q3 : v1, v2 ou v3 et pour la q4 : v1 ou v3 ?
+
+### Q5
+
+Il n'est pas possible que deux coordinateurs diffusent une décision, comme 
+
+Si une majorité suspecte le coordinateur : le coordinateur passe son tour (majorité de nack) et du coup tous les processus corrects vont à la ronde suivante.
+
+Il peut y avoir plusieurs broadcasts en même temps, mais la valeur retenue restera la même.
+
+3h17
+
+### Q6
+
+Un accord uniforme est défini comme suit : si un processus (correct ou fautif) délivre un message, c'est qu'il y a eu une majorité de processus qui ont cette valeur en `estimate`. Si le broadcast n'a pas été complètement fait : pas grave, le prochain coordinateur s'occupera de délivrer le même message (avec un numéro de ronde incrémenté, mais c'est transparent au regard de la valeur renvoyée). Cet algo implémente bien un accord uniforme.
+
+### Q7
+
+Le message `nack` permet de débloquer le coordinateur s'il est bloqué en attente de `(n+1)/2` réponses des autres processus. (s'il a été faussement suspecté par une majorité de processus)
+
+### Q8
+
+a) La terminaison est assurée par le fait que la diffusion fiable assure qu'un message envoyé sera, au bout d'un moment, ben reçu. Si l'émetteur tombe en panne avant d'avoir transmis à tous les autres processus, la diffusion fiable assure que tous ou aucun des processus corrects recevra le message : si aucun reçoit, on tombe dans l'hypothèse de pas plus de (n-1)/2 fautes (et l'algo continue avec la valeur du processus fautif sauvegardée dans au moins la moitié des autres processus corrects, d'où l'accord uniforme), si tout les corrects le reçoivent, la terminaison est assurée.
+
+b) (complétude forte : à terme, tout processus fautif est suspecté par tous les autres processus corrects).
+- Soit on a un processus qui n'est pas coordinateur : il peut être bloqué en phase 3, dans l'attente de celui qu'il pense être le coordinateur. Mais comme on a un <>S, au bout d'un moment si le coordinateur attendu est en panne il sera suspecté et on se débloque.
+- Soit le processus est un coordinateur : il peut être en attente en phase 2, mais on a supposé qu'il n'y avait pas plus de (n-1)/2 fautes, tous les processus corrects exécutent la phase 1 et les canaux sont fiables (pas de message perdu), donc la phase 2 ne peut pas être bloquante. La phase 3 est commune avec les processus n'étant pas coordinateurs. La phase 4 n'est pas non plus bloquante : tous les processus corrects sont tenus de répondre au coordinateur, et comme par hypothèse, il n'y a pas plus de (n-1)/2 processus fautifs, le coordinateur est forcément débloqué.
+- Enfin, pour tout processus, la terminaison est assurée (montré en a)) donc le `while state = undecided` s'arrête un jour car `state` passe à `decided` un jour.
+
+c) (justesse faible : à partir d'un moment, il existe un processus correct qui n'est plus jamais suspecté) Pour que l'algorithme termine et que les processus décident, il faut un R-Broadcast (un seul suffit car les canaux sont fiables et que les valeurs `estimate` des R-Broadcasts sont toujours identiques (seul l'identité du coordiateur et le numéro de la ronde peuvent changer)). Cela arrive forcément : soit c un processus qui n'est plus jamais suspecté (à partir d'un instant donné). S'il y a déjà eu un R-Broadcast, on a gagné. S'il n'y en a pas encore eu, il y a donc au moins (par hypothèse) `(n-1)/2` processus corrects qui vont répondre à c et aucun ne le suspecte. Il va donc en phase 4 recevoir une majorité (absolue) de `ack` et donc il va émettre un R-Broadcast et l'algo va bien finir.
+
+D'où la terminaison.
+
+### Q9
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+Okay chouette chouette, j'espère que tout va bien de ton côté en tout cas ! :)
 
 ## 2020-11-17 Cours 6
 
