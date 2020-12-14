@@ -1,7 +1,7 @@
 # ARA
 
 Luciana :
-
+```
     L'examen réparti 1 portera sur la partie de Pierre Sens et la mienne :
     - Protocole de diffusion
     - Mémoire partagée
@@ -11,7 +11,7 @@ Luciana :
     Sans documents.
 
     Les TDs que nous avons faits ont été extraits des anciens examen.  Les exercices de l'examen seront du même type que les TDs.
-
+```
 
 
 Pour l'instant, nous n'avons pas de cours numérique, c'est juste un polycopié. En plus de ces notes de cours, voir mes notes manuscrites.
@@ -64,8 +64,7 @@ Validité = best effort
 **Ordre** (p.36)
 
 **Ordre Total**
-- Les messages sont délivrés dans le même ordre à tous leurs
-destinataires.
+- Les messages sont délivrés dans le même ordre à tous leurs destinataires.
 
 **Ordre FIFO**
 - si un membre diffuse m1 puis m2, alors tout membre correct qui
@@ -800,6 +799,54 @@ c) (justesse faible : à partir d'un moment, il existe un processus correct qui 
 D'où la terminaison.
 
 ### Q9
+
+Le prof a dit qu'osef de la question 9.
+
+
+# Cours Paxos
+
+reprendre de 1h30
+
+**p.25** Pour la vivacité, on est obligé d'attendre `n-f` réponses (les byzantins peuvent juste ne pas répondre par exemple et simuler une panne franche). Et dans ces `n-f`, on veut soit une majorité de bonne réponses, donc, si tous les byzantins sont dans les répondants, il nous faut `(f byzantins) + (f + 1 non byzantins)`. Donc on veut `nb_réponses >= 2f + 1`. Et `nb_réponses = n - f` pour la vivacité. Donc on retrouve le résultat du cours :  `n - f >= 2f + 1` => `n >= 3f + 1` si on veut une majorité de processus non byzantins à chaque fois. (équivaut à `f < n/3`)
+
+
+**p.29** Proof contient la preuve des valeurs précédemment acceptées (la preuve que "AcceptNum + AcceptVal" est correct et pas inventé), i.e. les ack signées des autres processus qui ont envoyé les messages menant au couple "AcceptNum + AcceptVal", i.e. à cette décision.
+
+la signature par le processus de son message, prouvant que c'est bien lui qui l'a envoyé et qu'il n'a pas été modifié sur le réseau.
+
+**p.30** format : (message de type ack, numéro du scrutin actuel, numéro du scrutin ayant conduit à ma valeur val, val : valeur stockée (valeurs acceptées par chacun), proof : preuve qui permet de valides ces valeurs là).
+
+S contient l'ensemble des ack qui ont conduit à l'envoi de ce message, donc la preuve que le message est bien valide.
+
+
+### Q10
+
+Non, la valeur proposée doit être la même, car pour une ronde donnée, pour qu'un processus propose une valeur il faut qu'il ait reçu une majorité (> n/2) de valeurs identiques, ce qui n'est possible qu'une seule fois (comme on a n processus au total).
+
+### Q11
+
+Je pense qu'il faut juste remonter l'algorithme.
+
+Un processus p décide v à la ronde k => il a reçu au moins (f + 1) valeurs v de type Propose => il y a au mois (f + 1) processus qui ont envoyé (P, k, v) => (f + 1) processus ont reçu (R, k, v) d'une majorité de processus (>= n/2 + 1) => donc à cette ronde, il y a au moins n/2 + 1 processus qui ont la valeur v stockée. Le processus q qui apparaît à la ronde suivante, exécute l'algo, et reçoit donc une majorité de valeurs identiques.
+
+Réponse meilleure :
+
+- p a décidé à la ronde k
+- => il a reçu un message d'au moins (f + 1) processus de type (P, k, v) avec le même v
+- => (f + 1) processus ont reçu une majorité (> n/2) de messages de type (R, k, v) avec v identique
+- ça veut dire qu'il y a une majorité de processus qui ont la même valeur à la ronde k ((n/2 + 1) processus au minimum). Et à partir du moment où une majorité de processus ont la même valeur, cette valeur ne peut plus changer : pour que la valeur change, il faudrait qu'il y a à une ronde suivante une majorité de valeurs différentes proposées, ce qui est impossible : le seul moyen de changer sa valeur est de le faire l.16, mais cette valeur doit être une des valeurs proposées. Or il n'y a qu'une seule valeur proposée, identique, donc et les processus qui ont une valeur différente prennent cette valeur. Donc tout processus qui arrive à a phase k+1 recevra une majorité de valeurs identiques, et du coup décidera cette valeur.
+
+### Q12
+
+Une valeur aléatoire est choisie lorsqu'un processus n'a pas reçu une majorité de valeurs identiques de (n - f) processus, donc quand il n'y a pas plus de (n/2 + f) valeurs identiques pour les processus, à une ronde k donnée.
+
+Pour que l'algo ne se termine pas, il faudrait qu'on ait un processus p sur lequel :
+- jamais (f + 1) messages de type (P, k, v) reçus avec le même v
+- donc jamais 
+...
+
+
+
 
 
 
